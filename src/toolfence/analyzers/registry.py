@@ -69,7 +69,29 @@ def validate_registry(rules_dir: Path) -> list[str]:
         load_registry(rules_dir)
     except Exception as exc:  # noqa: BLE001 - used by CLI validation.
         errors.append(str(exc))
+    for path in sorted(rules_dir.rglob("*.json")):
+        try:
+            data = _load_json(path)
+            if path.name.endswith(".json") and "runtime" in path.parts:
+                _validate_runtime_policy(data, path)
+        except Exception as exc:  # noqa: BLE001 - used by CLI validation.
+            errors.append(f"{path}: {exc}")
     return errors
+
+
+def _validate_runtime_policy(data: dict[str, Any], path: Path) -> None:
+    if data.get("schema_version") != "toolfence.runtime-policy.v1":
+        return
+    for bucket in ("blacklist", "whitelist", "supervised"):
+        for rule in data.get("command_rules", {}).get(bucket, []):
+            re.compile(rule["pattern"])
+    for pattern in data.get("network_rules", {}).get("denied_domains", []):
+        if not isinstance(pattern, str):
+            raise ValueError(f"{path}: network denied domain pattern must be a string")
+    for name, rule in data.get("sanitizer_rules", {}).get("patterns", {}).items():
+        re.compile(rule["pattern"])
+        if "replacement" not in rule:
+            raise ValueError(f"{path}: sanitizer pattern {name} is missing replacement")
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -94,4 +116,3 @@ def _load_list(path: Path) -> list[ListEntry]:
             )
         )
     return entries
-

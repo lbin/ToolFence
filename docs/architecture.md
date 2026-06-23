@@ -85,6 +85,10 @@ V2 should reuse:
 - V1 SBOM asset IDs and fingerprints.
 - `rules/allowlist` and `rules/blocklist` as discovery-time controls.
 - `rules/policies/runtime-default.json` as the first event policy contract.
+- `rules/runtime/clawguard-runtime.json` as the first command/file/network
+  runtime policy template.
+- `toolfence.runtime` as the policy, sanitizer, audit, approval, and panic
+  engine for the MCP proxy.
 - Finding categories as policy authoring templates.
 
 Runtime enforcement should support:
@@ -108,4 +112,3 @@ Enterprise deployment adds:
 - Compliance reports for SOC2, ISO, and internal audit.
 - Risk intelligence feed for MCP servers, skills, maintainers, packages, and
   semantic diffs.
-

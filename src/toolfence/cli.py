@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from toolfence.discovery import collect_inventory
 from toolfence.firewall import evaluate_event
 from toolfence.models import ScanReport, severity_at_least, summarize_findings
 from toolfence.reporting import report_to_json, report_to_sarif, report_to_summary
+from toolfence.runtime import AuditLogger, RuntimeEngine
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -22,6 +24,8 @@ def main(argv: list[str] | None = None) -> int:
         return _rules(args)
     if args.command == "firewall":
         return _firewall(args)
+    if args.command == "runtime":
+        return _runtime(args)
     parser.print_help()
     return 2
 
@@ -58,6 +62,15 @@ def build_parser() -> argparse.ArgumentParser:
     check = firewall_sub.add_parser("check", help="Check one event JSON file.")
     check.add_argument("--policy", required=True)
     check.add_argument("--event", required=True)
+
+    runtime = subparsers.add_parser("runtime", help="Evaluate runtime tool-call events with ToolFence v0.2 policy.")
+    runtime_sub = runtime.add_subparsers(dest="runtime_command", required=True)
+    runtime_check = runtime_sub.add_parser("check", help="Check one runtime tool-call event JSON file.")
+    runtime_check.add_argument("--policy", default=None, help="Runtime policy JSON. Defaults to rules/runtime/clawguard-runtime.json.")
+    runtime_check.add_argument("--event", required=True, help="Runtime event JSON file.")
+    runtime_check.add_argument("--cwd", default=None, help="Working directory used to resolve relative script/file paths.")
+    runtime_check.add_argument("--audit-log", help="Append sanitized runtime decision to this JSONL audit log.")
+    runtime_check.add_argument("--format", choices=("summary", "json"), default="summary")
     return parser
 
 
@@ -122,6 +135,36 @@ def _firewall(args: argparse.Namespace) -> int:
     return 1 if decision.decision == "deny" else 0
 
 
+def _runtime(args: argparse.Namespace) -> int:
+    if args.runtime_command != "check":
+        return 2
+    policy_path = _runtime_policy_path(args.policy)
+    event_path = Path(args.event).expanduser()
+    with event_path.open("r", encoding="utf-8") as handle:
+        event = json.load(handle)
+    cwd = Path(args.cwd).expanduser().resolve() if args.cwd else Path.cwd().resolve()
+    engine = RuntimeEngine.from_file(policy_path, cwd=cwd)
+    decision = engine.evaluate(event)
+
+    if args.audit_log:
+        AuditLogger(Path(args.audit_log), sanitizer=engine.sanitizer).append(event, decision)
+
+    if args.format == "json":
+        print(json.dumps(decision.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        print(f"{decision.decision.upper()}: {decision.reason}" + (f" ({decision.rule_id})" if decision.rule_id else ""))
+        if decision.findings:
+            print("Findings:")
+            for finding in decision.findings:
+                print(f"- [{finding.severity}] {finding.category}: {finding.reason}")
+
+    if decision.decision == "deny":
+        return 1
+    if decision.decision == "require_approval":
+        return 2
+    return 0
+
+
 def _render_report(report: ScanReport, output_format: str) -> str:
     if output_format == "json":
         return report_to_json(report)
@@ -142,6 +185,12 @@ def _rules_dir(value: str | None) -> Path:
     return candidate
 
 
+def _runtime_policy_path(value: str | None) -> Path:
+    if value:
+        return Path(value).expanduser().resolve()
+    rules_dir = _rules_dir(None)
+    return rules_dir / "runtime" / "clawguard-runtime.json"
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
-

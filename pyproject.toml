@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "toolfence"
-version = "0.1.0"
+version = "0.2.0"
 description = "Endpoint inventory, risk scanning, and policy groundwork for AI agent tools, MCP servers, and skills."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -49,4 +49,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-

@@ -18,6 +18,16 @@
 - Semantic diff for skill instruction changes.
 - Baseline comparison to detect unexpected endpoint drift.
 
+## V0.2: Runtime Policy Core
+
+- ClawGuard-inspired command/file/network runtime policy.
+- Command obfuscation normalization and detection.
+- Pre-execution script static analysis.
+- Bidirectional sanitizer for runtime data and audit logs.
+- JSONL audit logger.
+- Approval queue and panic primitives for future UI/API integrations.
+- `toolfence runtime check` CLI.
+
 ## V2: Runtime Firewall
 
 - MCP proxy for `tools/list` and `tools/call`.
@@ -37,4 +47,3 @@
 - DLP integrations.
 - Compliance reporting.
 - Risk intelligence feed for MCP servers, skills, and agent tools.
-

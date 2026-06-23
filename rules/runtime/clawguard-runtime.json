@@ -1,0 +1,248 @@
+{
+  "schema_version": "toolfence.runtime-policy.v1",
+  "description": "ToolFence v0.2 runtime policy template inspired by ClawGuard's tool-call boundary controls. It is client-neutral and intended for CLI checks and the future MCP proxy/firewall.",
+  "panic": {
+    "enabled": false
+  },
+  "task_scope": {
+    "disabled_tools": []
+  },
+  "command_rules": {
+    "blacklist": [
+      {
+        "id": "TF-RUNTIME-CMD-RM-RF-ROOT",
+        "pattern": "\\brm\\s+-rf\\s+(/|~|\\$HOME|\\.\\.?/?\\*)",
+        "action": "deny",
+        "severity": "critical",
+        "reason": "recursive deletion of root, home, or broad wildcard scope"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-DISK-DEVICE",
+        "pattern": "\\b(mkfs|fdisk|parted)\\b|\\bdd\\s+.*\\bof=/dev/|>\\s*/dev/(sd[a-z]|nvme|vd[a-z]|hd[a-z])",
+        "action": "deny",
+        "severity": "critical",
+        "reason": "direct disk formatting or device write"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-REMOTE-PIPE",
+        "pattern": "(curl|wget)\\b.*\\|\\s*(bash|sh|python|perl|ruby|node)\\b|\\beval\\s+\\$\\((curl|wget)",
+        "action": "deny",
+        "severity": "critical",
+        "reason": "remote content piped into an interpreter"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-REVERSE-SHELL",
+        "pattern": "bash\\s+-i\\s+>&\\s*/dev/tcp|/dev/tcp/|\\bnc\\s+-[el]\\s+|\\bncat\\b.*\\s-e\\s+|\\bsocat\\b.*exec:",
+        "action": "deny",
+        "severity": "critical",
+        "reason": "reverse shell or raw remote shell pattern"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-CREDENTIAL-THEFT",
+        "pattern": "cat\\s+/etc/shadow|cat\\s+.*\\.ssh/id_(rsa|ecdsa|ed25519)|grep\\s+-r.*(password|secret|token).*~|security\\s+find-(generic|internet)-password",
+        "action": "deny",
+        "severity": "critical",
+        "reason": "credential or password-store access attempt"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-PERSISTENCE",
+        "pattern": "crontab\\s+.*@reboot|>>\\s*/etc/(rc\\.local|crontab)|systemctl\\s+(enable|edit)|launchctl\\s+load",
+        "action": "deny",
+        "severity": "high",
+        "reason": "persistence mechanism"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-DOCKER-ESCAPE",
+        "pattern": "docker\\s+run.*--privileged|docker\\b.*-v\\s*/:/|/var/run/docker\\.sock",
+        "action": "deny",
+        "severity": "critical",
+        "reason": "privileged container or Docker socket access"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-SYSTEM-SHUTDOWN",
+        "pattern": "\\b(reboot|shutdown|halt|poweroff|init\\s+0|init\\s+6)\\b|kill\\s+-9\\s+-1",
+        "action": "deny",
+        "severity": "critical",
+        "reason": "system shutdown or global process kill"
+      }
+    ],
+    "supervised": [
+      {
+        "id": "TF-RUNTIME-CMD-DELETE",
+        "pattern": "\\brm\\s+",
+        "action": "require_approval",
+        "severity": "medium",
+        "reason": "file deletion requires approval"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-PRIVILEGED",
+        "pattern": "\\bsudo\\s+|\\bsu\\s+-",
+        "action": "require_approval",
+        "severity": "high",
+        "reason": "privileged command requires approval"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-PERMISSION-CHANGE",
+        "pattern": "\\bchmod\\s+|\\bchown\\s+",
+        "action": "require_approval",
+        "severity": "medium",
+        "reason": "permission or ownership change requires approval"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-HTTP-WRITE",
+        "pattern": "\\bcurl\\s+.*(-X\\s+)?(POST|PUT|PATCH|DELETE)|\\bwget\\s+--method=(POST|PUT|PATCH|DELETE)",
+        "action": "require_approval",
+        "severity": "medium",
+        "reason": "HTTP write operation requires approval"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-PACKAGE-INSTALL",
+        "pattern": "\\b(pip3?|npm|pnpm|yarn|uv|brew|apt-get|yum|dnf)\\s+(install|add|upgrade|update)",
+        "action": "require_approval",
+        "severity": "medium",
+        "reason": "package installation or update requires approval"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-GIT-WRITE",
+        "pattern": "\\bgit\\s+(push|commit|add|reset\\s+--hard|clean\\s+-fd|tag|merge|rebase)",
+        "action": "require_approval",
+        "severity": "medium",
+        "reason": "git write operation requires approval"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-REMOTE-ACCESS",
+        "pattern": "\\bssh\\s+.*@|\\bscp\\s+|\\brsync\\s+.*:",
+        "action": "require_approval",
+        "severity": "medium",
+        "reason": "remote access requires approval"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-DB-WRITE",
+        "pattern": "\\b(mysql|psql|mongo|redis-cli)\\b.*\\b(delete|drop|truncate|update|insert|alter)\\b",
+        "action": "require_approval",
+        "severity": "high",
+        "reason": "database mutation requires approval"
+      }
+    ],
+    "whitelist": [
+      {
+        "id": "TF-RUNTIME-CMD-READONLY-SHELL",
+        "pattern": "^\\s*(pwd|whoami|hostname|date|ls)(\\s+[-A-Za-z0-9_./~ ]*)?$",
+        "action": "allow",
+        "severity": "info",
+        "reason": "read-only shell inspection"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-READONLY-GIT",
+        "pattern": "^\\s*git\\s+(status|log|diff|show|branch|remote|config\\s+--get|ls-files|ls-tree)\\b",
+        "action": "allow",
+        "severity": "info",
+        "reason": "read-only git inspection"
+      },
+      {
+        "id": "TF-RUNTIME-CMD-READONLY-PACKAGES",
+        "pattern": "^\\s*(pip3?|npm|pnpm|yarn)\\s+(list|ls|show|freeze|why)\\b",
+        "action": "allow",
+        "severity": "info",
+        "reason": "read-only package inspection"
+      }
+    ]
+  },
+  "file_rules": {
+    "allowed_paths": [],
+    "denied_paths": [
+      "~/.ssh/**",
+      "~/.gnupg/**",
+      "~/.aws/**",
+      "~/.config/gcloud/**",
+      "~/.kube/**",
+      "~/.docker/config.json",
+      "~/.git-credentials",
+      "~/.netrc",
+      "~/.npmrc",
+      "~/.pypirc",
+      "~/Library/Keychains/**",
+      "~/Library/Application Support/Google/Chrome/**",
+      "~/Library/Application Support/Firefox/**",
+      "~/Library/Mail/**",
+      "~/Library/Messages/**",
+      "/etc/shadow",
+      "/etc/sudoers",
+      "/boot/**",
+      "/proc/kcore",
+      "/sys/**",
+      "/var/run/docker.sock"
+    ],
+    "sensitive_patterns": [
+      "*.pem",
+      "*.key",
+      "*.p12",
+      "*.pfx",
+      "*_rsa",
+      "*_ecdsa",
+      "*_ed25519",
+      ".env*",
+      "*.env",
+      "*password*",
+      "*passwd*",
+      "*secret*",
+      "*credential*",
+      "*token*",
+      "*auth*",
+      "*.ovpn",
+      "*.mobileconfig",
+      "*.sql",
+      "*.dump",
+      "*.db",
+      "*.bak",
+      "*.backup"
+    ]
+  },
+  "network_rules": {
+    "allowed_domains": [
+      "registry.npmjs.org",
+      "pypi.org",
+      "files.pythonhosted.org",
+      "rubygems.org",
+      "crates.io",
+      "pkg.go.dev",
+      "api.openai.com",
+      "api.anthropic.com",
+      "docs.python.org",
+      "developer.mozilla.org",
+      "stackoverflow.com",
+      "cdnjs.cloudflare.com",
+      "cdn.jsdelivr.net",
+      "unpkg.com"
+    ],
+    "denied_domains": [
+      "*.onion",
+      "*.i2p",
+      "pastebin.com",
+      "paste.ee",
+      "hastebin.com",
+      "dpaste.com",
+      "transfer.sh",
+      "file.io",
+      "temp.sh",
+      "webhook.site",
+      "requestbin.*",
+      "ngrok.io",
+      "*.ngrok.io",
+      "*.ngrok-free.app",
+      "localtunnel.me",
+      "*.loca.lt",
+      "serveo.net",
+      "bit.ly",
+      "tinyurl.com",
+      "t.co",
+      "raw.githubusercontent.com/.*/(main|master)/install.sh",
+      "[0-9]{1,3}(\\.[0-9]{1,3}){3}"
+    ],
+    "default_action": "require_approval"
+  },
+  "sanitizer_rules": {
+    "enabled": true
+  }
+}
+

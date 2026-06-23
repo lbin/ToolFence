@@ -81,6 +81,15 @@ toolfence firewall check \
   --event examples/runtime-event.json
 ```
 
+Evaluate a ClawGuard-style runtime tool-call event:
+
+```bash
+toolfence runtime check \
+  --policy rules/runtime/clawguard-runtime.json \
+  --event examples/runtime-event.json \
+  --audit-log reports/runtime-audit.jsonl
+```
+
 ## Outputs
 
 The JSON report contains:
@@ -106,6 +115,7 @@ The open registry lives in `rules/`:
 - `rules/blocklist/skills.json`
 - `rules/builtin-rules.json`
 - `rules/policies/runtime-default.json`
+- `rules/runtime/clawguard-runtime.json`
 
 Allowlist entries are intentionally review-oriented. In real enterprise use,
 prefer exact fingerprints, signed releases, internal package mirrors, code
@@ -143,6 +153,7 @@ GitHub Action:
 See:
 
 - `docs/architecture.md`
+- `docs/clawguard-port.md`
 - `docs/threat-model.md`
 - `docs/ruleset.md`
 - `docs/roadmap.md`
