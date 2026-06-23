@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toolfence.dev/schema/registry-entry.v1.json",
+  "title": "ToolFence Registry Entry",
+  "type": "object",
+  "required": ["id", "description", "match"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-_.]+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["allow", "flag", "deny", "require_approval"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "low", "medium", "high", "critical"]
+    },
+    "match": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Case-insensitive regular expression matched against normalized asset fields."
+      }
+    },
+    "metadata": {
+      "type": "object"
+    }
+  }
+}
+

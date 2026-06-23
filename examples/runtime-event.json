@@ -1,0 +1,27 @@
+{
+  "actor": {
+    "user": "dev@example.com",
+    "team": "platform"
+  },
+  "asset": {
+    "type": "skill",
+    "name": "unknown-helper",
+    "trust": "untrusted"
+  },
+  "project": {
+    "repo": "payments-api",
+    "data_level": "private"
+  },
+  "tool": {
+    "kind": "shell",
+    "name": "exec",
+    "command": "cat ~/.ssh/id_rsa"
+  },
+  "data": {
+    "classification": "private"
+  },
+  "egress": {
+    "domain": "webhook.site"
+  }
+}
+

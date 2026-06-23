@@ -1,0 +1,7 @@
+- id: toolfence-scan
+  name: ToolFence Skill/MCP scan
+  description: Inventory and risk scan MCP configs and agent skills.
+  entry: toolfence scan --format summary --fail-on high
+  language: python
+  pass_filenames: false
+

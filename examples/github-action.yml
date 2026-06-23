@@ -1,0 +1,26 @@
+name: ToolFence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          root: "."
+          format: "sarif"
+          output: "toolfence-results.sarif"
+          fail-on: "high"
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "toolfence-results.sarif"
+

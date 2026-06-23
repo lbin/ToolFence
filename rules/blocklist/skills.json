@@ -1,0 +1,44 @@
+{
+  "schema_version": "toolfence.blocklist.v1",
+  "registry_type": "skill",
+  "description": "Behavior and pattern blocklist for agent skills.",
+  "entries": [
+    {
+      "id": "public-webhook-url",
+      "description": "Skill references public webhook or request collection infrastructure.",
+      "action": "deny",
+      "severity": "high",
+      "match": {
+        "urls": "(webhook\\.site|requestbin\\.|ngrok\\.|ngrok-free\\.app|discord(?:app)?\\.com|api\\.telegram\\.org)"
+      },
+      "metadata": {
+        "rationale": "Skills should not send endpoint or repository data to unapproved external sinks."
+      }
+    },
+    {
+      "id": "downloads-skill-path",
+      "description": "Skill is installed from a transient Downloads path.",
+      "action": "flag",
+      "severity": "medium",
+      "match": {
+        "path": "/Downloads/"
+      },
+      "metadata": {
+        "rationale": "Transient install locations make provenance and update review weak."
+      }
+    },
+    {
+      "id": "temp-skill-path",
+      "description": "Skill is installed from a temporary path.",
+      "action": "flag",
+      "severity": "high",
+      "match": {
+        "path": "(/tmp/|/var/folders/|AppData/Local/Temp)"
+      },
+      "metadata": {
+        "rationale": "Temporary directories are inappropriate for trusted executable skills."
+      }
+    }
+  ]
+}
+

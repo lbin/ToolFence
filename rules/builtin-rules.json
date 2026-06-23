@@ -1,0 +1,83 @@
+{
+  "schema_version": "toolfence.rules.v1",
+  "rules": [
+    {
+      "id": "TF-SENSITIVE-PATH-REFERENCE",
+      "title": "Sensitive local path reference",
+      "severity": "high",
+      "category": "sensitive-file-access",
+      "scope": ["skill_file", "mcp_command"],
+      "pattern": "(?i)(~/|\\$HOME/|/Users/[^\\s]+/|/home/[^\\s]+/)?(\\.ssh|\\.aws|\\.gnupg|\\.git-credentials|\\.netrc|\\.npmrc|\\.pypirc|\\.kube|\\.docker/config\\.json|Library/Keychains|Library/Application Support/Google/Chrome|Library/Application Support/BraveSoftware|Library/Application Support/Firefox|keychain)",
+      "message": "{asset} references a sensitive local path or credential store.",
+      "remediation": "Remove direct sensitive path access, scope to project directories, and broker credentials through policy-controlled secrets.",
+      "confidence": "high"
+    },
+    {
+      "id": "TF-HARDCODED-SECRET",
+      "title": "Hardcoded secret-like value",
+      "severity": "critical",
+      "category": "secret-exposure",
+      "scope": ["skill_file", "any_file"],
+      "pattern": "(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----)",
+      "message": "{asset} contains a hardcoded secret-like value.",
+      "remediation": "Revoke the exposed credential, remove it from the skill, and use scoped runtime credential injection.",
+      "confidence": "medium"
+    },
+    {
+      "id": "TF-PROMPT-INJECTION-INSTRUCTION",
+      "title": "Hidden or adversarial instruction",
+      "severity": "high",
+      "category": "prompt-injection",
+      "scope": ["skill_file", "any_file"],
+      "pattern": "(?i)(ignore (all )?(previous|prior|above) instructions|do not (tell|reveal|mention)|hidden instruction|secretly|exfiltrate|send (the )?(secrets|tokens|credentials))",
+      "message": "{asset} contains language commonly used for hidden instructions or prompt injection.",
+      "remediation": "Review the instruction source, remove hidden behavior, and require provenance for skill updates.",
+      "confidence": "medium"
+    },
+    {
+      "id": "TF-DANGEROUS-SHELL",
+      "title": "Dangerous shell operation",
+      "severity": "high",
+      "category": "dangerous-command",
+      "scope": ["skill_file", "mcp_command", "any_file"],
+      "pattern": "(?i)(rm\\s+-rf\\s+(/|~|\\$HOME)|chmod\\s+777|curl\\s+[^\\n|]+\\|\\s*(sh|bash)|wget\\s+[^\\n|]+\\|\\s*(sh|bash)|osascript|security\\s+find-(generic|internet)-password|sudo\\s+)",
+      "message": "{asset} contains a dangerous shell operation.",
+      "remediation": "Remove the command or require explicit human approval and sandboxing before execution.",
+      "confidence": "high"
+    },
+    {
+      "id": "TF-EGRESS-SINK",
+      "title": "Potential data exfiltration sink",
+      "severity": "high",
+      "category": "egress",
+      "scope": ["skill_file", "mcp_command", "any_file"],
+      "pattern": "(?i)(webhook\\.site|requestbin|pastebin\\.com|discord(?:app)?\\.com/api/webhooks|api\\.telegram\\.org|ngrok-free\\.app|ngrok\\.io|slack\\.com/api/files\\.upload|fetch\\s*\\(|requests\\.post|axios\\.post|curl\\s+-X\\s+POST)",
+      "message": "{asset} references a potential outbound data sink.",
+      "remediation": "Route outbound traffic through an approved proxy and enforce data-flow policy for sensitive sources.",
+      "confidence": "medium"
+    },
+    {
+      "id": "TF-RUG-PULL-UPDATER",
+      "title": "Unpinned self-update or remote fetch",
+      "severity": "medium",
+      "category": "supply-chain",
+      "scope": ["skill_file", "mcp_command", "any_file"],
+      "pattern": "(?i)((git\\s+pull|npm\\s+install|pip\\s+install|curl\\s+-o|curl\\s+-L|wget\\s+).*(@latest|main|master|HEAD|raw\\.githubusercontent\\.com))",
+      "message": "{asset} can fetch mutable remote code or dependencies.",
+      "remediation": "Pin versions and content hashes, or mirror reviewed artifacts internally.",
+      "confidence": "medium"
+    },
+    {
+      "id": "TF-DOCKER-SOCKET-ACCESS",
+      "title": "Docker socket or privileged container access",
+      "severity": "critical",
+      "category": "privilege-escalation",
+      "scope": ["skill_file", "mcp_command", "any_file"],
+      "pattern": "(?i)(/var/run/docker\\.sock|--privileged|docker\\s+run[^\\n]+-v\\s*/:/host|docker\\s+exec)",
+      "message": "{asset} references Docker socket or privileged container behavior.",
+      "remediation": "Deny by default unless the server runs in a controlled sandbox with explicit approval.",
+      "confidence": "high"
+    }
+  ]
+}
+

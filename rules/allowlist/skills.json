@@ -1,0 +1,34 @@
+{
+  "schema_version": "toolfence.allowlist.v1",
+  "registry_type": "skill",
+  "description": "Community-maintained seed allowlist. Use exact fingerprints for enforcement in real deployments.",
+  "entries": [
+    {
+      "id": "org-owned-skill-directory",
+      "description": "Organization-owned skill directory template.",
+      "action": "allow",
+      "severity": "info",
+      "match": {
+        "path": "^/opt/company/agent-skills/"
+      },
+      "metadata": {
+        "trust_level": "org-owned-template",
+        "required_controls": ["code_owner", "reviewed_hash", "signed_release"]
+      }
+    },
+    {
+      "id": "reviewed-fingerprint-template",
+      "description": "Exact reviewed skill fingerprint template.",
+      "action": "allow",
+      "severity": "info",
+      "match": {
+        "fingerprint": "^replace-with-reviewed-sha256$"
+      },
+      "metadata": {
+        "trust_level": "fingerprint-template",
+        "replace_fingerprint": true
+      }
+    }
+  ]
+}
+

@@ -1,0 +1,47 @@
+{
+  "schema_version": "toolfence.policy.v1",
+  "default_effect": "allow",
+  "description": "Starter runtime policy template for future MCP proxy/firewall enforcement.",
+  "rules": [
+    {
+      "id": "deny-shell-for-untrusted-skill",
+      "effect": "deny",
+      "reason": "Untrusted skills may not invoke shell tools.",
+      "when": {
+        "asset.trust": "untrusted",
+        "tool.kind": "shell"
+      }
+    },
+    {
+      "id": "deny-sensitive-file-read",
+      "effect": "deny",
+      "reason": "Sensitive credential paths require brokered approval.",
+      "when": {
+        "tool.kind": "file_read",
+        "tool.path": {
+          "glob": "*/.ssh/*"
+        }
+      }
+    },
+    {
+      "id": "approve-git-push",
+      "effect": "require_approval",
+      "reason": "Code pushes are high-risk actions.",
+      "when": {
+        "tool.kind": "git_push"
+      }
+    },
+    {
+      "id": "deny-private-data-to-external-domain",
+      "effect": "deny",
+      "reason": "Private data cannot be sent to non-corporate domains.",
+      "when": {
+        "data.classification": "private",
+        "egress.domain": {
+          "not_in": ["example.com", "corp.example.com"]
+        }
+      }
+    }
+  ]
+}
+

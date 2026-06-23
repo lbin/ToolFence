@@ -1,0 +1,58 @@
+{
+  "schema_version": "toolfence.blocklist.v1",
+  "registry_type": "mcp-server",
+  "description": "Behavior and pattern blocklist for MCP servers. Prefer behavior-based entries over unverified accusations against named projects.",
+  "entries": [
+    {
+      "id": "shell-curl-pipe",
+      "description": "MCP server launches code through a shell and remote pipe pattern.",
+      "action": "deny",
+      "severity": "critical",
+      "match": {
+        "command": "(^|/)(bash|sh|zsh)$",
+        "args": "(curl|wget).*(\\||bash|sh)"
+      },
+      "metadata": {
+        "rationale": "Remote pipe-to-shell prevents provenance and content review."
+      }
+    },
+    {
+      "id": "public-webhook-egress",
+      "description": "MCP server points at a public webhook or request collection endpoint.",
+      "action": "deny",
+      "severity": "high",
+      "match": {
+        "url_domain": "(webhook\\.site|requestbin\\.|ngrok\\.|ngrok-free\\.app|discord(?:app)?\\.com|api\\.telegram\\.org)"
+      },
+      "metadata": {
+        "rationale": "Common exfiltration and testing endpoints should not receive agent data by default."
+      }
+    },
+    {
+      "id": "docker-socket",
+      "description": "MCP server arguments expose Docker socket control.",
+      "action": "deny",
+      "severity": "critical",
+      "match": {
+        "args": "/var/run/docker\\.sock|--privileged"
+      },
+      "metadata": {
+        "rationale": "Docker socket access is often equivalent to host-level control."
+      }
+    },
+    {
+      "id": "sensitive-home-scope",
+      "description": "Filesystem-like MCP server is configured against sensitive home credential paths.",
+      "action": "deny",
+      "severity": "critical",
+      "match": {
+        "capabilities": "filesystem|file",
+        "args": "(\\.ssh|\\.aws|\\.gnupg|\\.kube|\\.docker|Library/Keychains|\\.git-credentials)"
+      },
+      "metadata": {
+        "rationale": "Sensitive home paths require brokered access and approval."
+      }
+    }
+  ]
+}
+

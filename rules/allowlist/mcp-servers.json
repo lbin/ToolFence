@@ -1,0 +1,52 @@
+{
+  "schema_version": "toolfence.allowlist.v1",
+  "registry_type": "mcp-server",
+  "description": "Community-maintained seed allowlist. Entries are examples of reviewed patterns, not a universal trust statement. Organizations should fork, pin versions, and add owner/fingerprint fields before enforce mode.",
+  "entries": [
+    {
+      "id": "local-project-filesystem-reviewed",
+      "description": "Reviewed local filesystem MCP server with project-scoped paths.",
+      "action": "allow",
+      "severity": "info",
+      "match": {
+        "transport": "^stdio$",
+        "capabilities": "filesystem",
+        "args": "(\\.|/workspaces/|/Users/[^\\s]+/(src|Desktop|Documents)/[^\\s]+)"
+      },
+      "metadata": {
+        "trust_level": "review-required",
+        "required_controls": ["path_scope", "deny_sensitive_home_paths", "version_pin"]
+      }
+    },
+    {
+      "id": "local-git-readonly-reviewed",
+      "description": "Reviewed local Git MCP server intended for read-only repository inspection.",
+      "action": "allow",
+      "severity": "info",
+      "match": {
+        "transport": "^stdio$",
+        "capabilities": "github|git",
+        "args": "(--read-only|readonly|read_only)"
+      },
+      "metadata": {
+        "trust_level": "review-required",
+        "required_controls": ["read_only", "deny_push", "repo_scope"]
+      }
+    },
+    {
+      "id": "internal-https-mcp-gateway",
+      "description": "Organization-owned HTTPS MCP gateway.",
+      "action": "allow",
+      "severity": "info",
+      "match": {
+        "transport": "(http|sse|streamable-http)",
+        "url_domain": "(^|\\.)example\\.com$"
+      },
+      "metadata": {
+        "trust_level": "org-owned-template",
+        "replace_domain": "Set this to your corporate MCP gateway domain."
+      }
+    }
+  ]
+}
+
