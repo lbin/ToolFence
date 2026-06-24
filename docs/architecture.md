@@ -101,6 +101,20 @@ Runtime enforcement should support:
 - Data-flow tracking from read sources to write/egress destinations.
 - Full audit and replay.
 
+## V0.3 MCP Proxy Policy Engine
+
+ToolFence v0.3.0 implements the policy core for the V2 proxy:
+
+- `toolfence.proxy` parses MCP JSON-RPC `tools/list` and `tools/call` messages.
+- `tools/list` responses can be filtered before the model sees risky tools.
+- `tools/call` requests are classified into runtime event kinds and evaluated by
+  `toolfence.runtime`.
+- Deny and approval decisions can be converted into MCP JSON-RPC error
+  responses.
+
+This is deliberately transport-neutral. A later release can wrap stdio, SSE, or
+streamable HTTP around the same decision engine.
+
 ## V3 Enterprise Control Plane
 
 Enterprise deployment adds:

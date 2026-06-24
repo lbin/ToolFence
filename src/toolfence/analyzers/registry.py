@@ -74,6 +74,8 @@ def validate_registry(rules_dir: Path) -> list[str]:
             data = _load_json(path)
             if path.name.endswith(".json") and "runtime" in path.parts:
                 _validate_runtime_policy(data, path)
+            if path.name.endswith(".json") and "proxy" in path.parts:
+                _validate_proxy_policy(data, path)
         except Exception as exc:  # noqa: BLE001 - used by CLI validation.
             errors.append(f"{path}: {exc}")
     return errors
@@ -92,6 +94,24 @@ def _validate_runtime_policy(data: dict[str, Any], path: Path) -> None:
         re.compile(rule["pattern"])
         if "replacement" not in rule:
             raise ValueError(f"{path}: sanitizer pattern {name} is missing replacement")
+
+
+def _validate_proxy_policy(data: dict[str, Any], path: Path) -> None:
+    if data.get("schema_version") != "toolfence.mcp-proxy-policy.v1":
+        return
+    for section, buckets in {
+        "discovery": ("deny_tools", "allow_tools"),
+        "invocation": ("deny_tools", "require_approval_tools"),
+    }.items():
+        for bucket in buckets:
+            for rule in data.get(section, {}).get(bucket, []):
+                for key in ("name_pattern", "description_pattern", "argument_pattern"):
+                    if rule.get(key):
+                        re.compile(rule[key])
+    for classifier in data.get("invocation", {}).get("classifiers", []):
+        re.compile(classifier["name_pattern"])
+        if not classifier.get("argument_keys"):
+            raise ValueError(f"{path}: classifier {classifier.get('kind')} is missing argument_keys")
 
 
 def _load_json(path: Path) -> dict[str, Any]:

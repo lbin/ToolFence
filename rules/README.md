@@ -12,6 +12,8 @@ The intent is to make allowlist and blocklist data reviewable in source control:
 - `policies/runtime-default.json`: starter policy template for the future runtime firewall.
 - `runtime/clawguard-runtime.json`: v0.2 runtime policy template for command,
   file, network, sanitizer, task-scope, and panic checks inspired by ClawGuard.
+- `proxy/mcp-proxy-policy.json`: v0.3 MCP proxy policy template for
+  `tools/list` filtering and `tools/call` classification.
 
 Allowlist entries should become more exact over time. For enterprise enforcement,
 prefer exact fingerprints, signed release provenance, owner metadata, declared

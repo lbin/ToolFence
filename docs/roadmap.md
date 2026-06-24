@@ -28,6 +28,15 @@
 - Approval queue and panic primitives for future UI/API integrations.
 - `toolfence runtime check` CLI.
 
+## V0.3: MCP Proxy Policy Engine
+
+- MCP JSON-RPC `tools/list` filtering.
+- MCP JSON-RPC `tools/call` evaluation.
+- Tool classifiers for shell, file, and network operations.
+- MCP error responses for deny and approval decisions.
+- Default proxy policy in `rules/proxy/mcp-proxy-policy.json`.
+- `toolfence proxy filter-tools` and `toolfence proxy check-call` CLI.
+
 ## V2: Runtime Firewall
 
 - MCP proxy for `tools/list` and `tools/call`.

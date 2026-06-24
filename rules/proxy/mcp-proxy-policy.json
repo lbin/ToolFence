@@ -1,0 +1,89 @@
+{
+  "schema_version": "toolfence.mcp-proxy-policy.v1",
+  "description": "Default MCP proxy policy for v0.3.0. Discovery rules hide high-risk tools from tools/list. Invocation rules classify tools/call requests into ToolFence runtime events.",
+  "discovery": {
+    "default_visibility": "show",
+    "deny_tools": [
+      {
+        "id": "TF-PROXY-HIDE-SHELL-TOOLS",
+        "action": "hide",
+        "name_pattern": "(shell|bash|terminal|execute|exec|command|process)",
+        "description_pattern": "(shell|terminal|command|process|execute)",
+        "severity": "high",
+        "reason": "shell-capable tools should be exposed only through scoped approval"
+      },
+      {
+        "id": "TF-PROXY-HIDE-CREDENTIAL-TOOLS",
+        "action": "hide",
+        "name_pattern": "(credential|secret|token|keychain|password)",
+        "severity": "critical",
+        "reason": "credential-management tools are hidden by default"
+      },
+      {
+        "id": "TF-PROXY-HIDE-DESTRUCTIVE-TOOLS",
+        "action": "hide",
+        "name_pattern": "(delete|remove|rm|wipe|destroy)",
+        "severity": "high",
+        "reason": "destructive tools require explicit policy exposure"
+      }
+    ],
+    "allow_tools": []
+  },
+  "invocation": {
+    "deny_tools": [
+      {
+        "id": "TF-PROXY-DENY-PANIC-BYPASS",
+        "action": "deny",
+        "name_pattern": "(disable_security|bypass|disable_guard|turn_off_toolfence)",
+        "severity": "critical",
+        "reason": "tool appears to bypass or disable security controls"
+      }
+    ],
+    "require_approval_tools": [
+      {
+        "id": "TF-PROXY-APPROVE-DESTRUCTIVE-TOOL",
+        "action": "require_approval",
+        "name_pattern": "(delete|remove|rm|wipe|destroy)",
+        "severity": "high",
+        "reason": "destructive tool invocation requires human approval"
+      },
+      {
+        "id": "TF-PROXY-APPROVE-GIT-WRITE",
+        "action": "require_approval",
+        "name_pattern": "(git_push|create_pull_request|merge_pull_request|commit_changes)",
+        "severity": "medium",
+        "reason": "repository write operation requires approval"
+      },
+      {
+        "id": "TF-PROXY-APPROVE-EMAIL-SEND",
+        "action": "require_approval",
+        "name_pattern": "(send_email|gmail_send|mail_send|slack_post|teams_send)",
+        "severity": "high",
+        "reason": "external communication requires approval"
+      }
+    ],
+    "classifiers": [
+      {
+        "kind": "shell",
+        "name_pattern": "(shell|bash|terminal|execute|exec|command|process)",
+        "argument_keys": ["command", "cmd", "input", "script"]
+      },
+      {
+        "kind": "file_read",
+        "name_pattern": "(read_file|read|cat_file|get_file|open_file)",
+        "argument_keys": ["path", "file", "filename", "target"]
+      },
+      {
+        "kind": "file_write",
+        "name_pattern": "(write_file|edit_file|patch_file|create_file|save_file)",
+        "argument_keys": ["path", "file", "filename", "target"]
+      },
+      {
+        "kind": "http_request",
+        "name_pattern": "(http|fetch|request|browser|download|upload|post)",
+        "argument_keys": ["url", "uri", "endpoint", "target"]
+      }
+    ]
+  }
+}
+

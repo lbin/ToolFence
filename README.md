@@ -90,6 +90,19 @@ toolfence runtime check \
   --audit-log reports/runtime-audit.jsonl
 ```
 
+Filter and evaluate MCP JSON-RPC messages:
+
+```bash
+toolfence proxy filter-tools \
+  --message examples/mcp-tools-list-response.json \
+  --format json
+
+toolfence proxy check-call \
+  --message examples/mcp-tool-call-shell.json \
+  --emit-error-response \
+  --format json
+```
+
 ## Outputs
 
 The JSON report contains:
@@ -116,6 +129,7 @@ The open registry lives in `rules/`:
 - `rules/builtin-rules.json`
 - `rules/policies/runtime-default.json`
 - `rules/runtime/clawguard-runtime.json`
+- `rules/proxy/mcp-proxy-policy.json`
 
 Allowlist entries are intentionally review-oriented. In real enterprise use,
 prefer exact fingerprints, signed releases, internal package mirrors, code
@@ -154,12 +168,15 @@ See:
 
 - `docs/architecture.md`
 - `docs/clawguard-port.md`
+- `docs/mcp-proxy.md`
 - `docs/threat-model.md`
 - `docs/ruleset.md`
 - `docs/roadmap.md`
 
 ## Status
 
-This is an alpha V1 scanner and registry. It is useful for inventory, risk
-review, CI checks, and policy prototyping. Runtime blocking requires the V2 MCP
-proxy/firewall layer described in the architecture docs.
+This is an alpha scanner, registry, runtime policy core, and MCP proxy policy
+engine. It is useful for inventory, risk review, CI checks, policy prototyping,
+and offline MCP message evaluation. Runtime blocking across live agent traffic
+requires the transport-bound V2 MCP proxy/firewall layer described in the
+architecture docs.

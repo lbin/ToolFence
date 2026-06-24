@@ -11,6 +11,7 @@ from toolfence.analyzers.registry import validate_registry
 from toolfence.discovery import collect_inventory
 from toolfence.firewall import evaluate_event
 from toolfence.models import ScanReport, severity_at_least, summarize_findings
+from toolfence.proxy import McpProxy, McpProxyPolicy
 from toolfence.reporting import report_to_json, report_to_sarif, report_to_summary
 from toolfence.runtime import AuditLogger, RuntimeEngine
 
@@ -26,6 +27,8 @@ def main(argv: list[str] | None = None) -> int:
         return _firewall(args)
     if args.command == "runtime":
         return _runtime(args)
+    if args.command == "proxy":
+        return _proxy(args)
     parser.print_help()
     return 2
 
@@ -71,6 +74,21 @@ def build_parser() -> argparse.ArgumentParser:
     runtime_check.add_argument("--cwd", default=None, help="Working directory used to resolve relative script/file paths.")
     runtime_check.add_argument("--audit-log", help="Append sanitized runtime decision to this JSONL audit log.")
     runtime_check.add_argument("--format", choices=("summary", "json"), default="summary")
+
+    proxy = subparsers.add_parser("proxy", help="Evaluate MCP JSON-RPC messages with the v0.3 proxy policy engine.")
+    proxy_sub = proxy.add_subparsers(dest="proxy_command", required=True)
+    filter_tools = proxy_sub.add_parser("filter-tools", help="Filter an MCP tools/list response.")
+    filter_tools.add_argument("--message", required=True, help="MCP tools/list response JSON.")
+    filter_tools.add_argument("--proxy-policy", default=None, help="Proxy policy JSON. Defaults to rules/proxy/mcp-proxy-policy.json.")
+    filter_tools.add_argument("--runtime-policy", default=None, help="Runtime policy JSON used to initialize the proxy.")
+    filter_tools.add_argument("--format", choices=("summary", "json"), default="summary")
+    check_call = proxy_sub.add_parser("check-call", help="Evaluate an MCP tools/call request.")
+    check_call.add_argument("--message", required=True, help="MCP tools/call request JSON.")
+    check_call.add_argument("--proxy-policy", default=None)
+    check_call.add_argument("--runtime-policy", default=None)
+    check_call.add_argument("--cwd", default=None)
+    check_call.add_argument("--emit-error-response", action="store_true", help="Include MCP JSON-RPC error response in JSON output.")
+    check_call.add_argument("--format", choices=("summary", "json"), default="summary")
     return parser
 
 
@@ -165,6 +183,52 @@ def _runtime(args: argparse.Namespace) -> int:
     return 0
 
 
+def _proxy(args: argparse.Namespace) -> int:
+    message_path = Path(args.message).expanduser()
+    with message_path.open("r", encoding="utf-8") as handle:
+        message = json.load(handle)
+    proxy = _build_proxy(args)
+
+    if args.proxy_command == "filter-tools":
+        result = proxy.filter_tools_response(message)
+        if args.format == "json":
+            print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+        else:
+            tools = result.message.get("result", {}).get("tools", [])
+            print(f"VISIBLE_TOOLS: {len(tools)}")
+            if result.decisions:
+                print("Filtered:")
+                for decision in result.decisions:
+                    print(f"- {decision.tool_name}: {decision.reason} ({decision.rule_id})")
+        return 0
+
+    if args.proxy_command == "check-call":
+        decision = proxy.evaluate_tool_call_request(message)
+        payload = {"decision": decision.to_dict()}
+        if args.emit_error_response and decision.action in {"deny", "require_approval"}:
+            payload["error_response"] = proxy.denied_response(message, decision)
+        if args.format == "json":
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+        else:
+            print(f"{decision.action.upper()}: {decision.reason} ({decision.rule_id})")
+            if decision.action in {"deny", "require_approval"} and args.emit_error_response:
+                print(json.dumps(proxy.denied_response(message, decision), indent=2, ensure_ascii=False))
+        if decision.action == "deny":
+            return 1
+        if decision.action == "require_approval":
+            return 2
+        return 0
+
+    return 2
+
+
+def _build_proxy(args: argparse.Namespace) -> McpProxy:
+    cwd = Path(getattr(args, "cwd", None)).expanduser().resolve() if getattr(args, "cwd", None) else Path.cwd().resolve()
+    proxy_policy = McpProxyPolicy.from_file(_proxy_policy_path(getattr(args, "proxy_policy", None)))
+    runtime_engine = RuntimeEngine.from_file(_runtime_policy_path(getattr(args, "runtime_policy", None)), cwd=cwd)
+    return McpProxy(proxy_policy, runtime_engine)
+
+
 def _render_report(report: ScanReport, output_format: str) -> str:
     if output_format == "json":
         return report_to_json(report)
@@ -190,6 +254,13 @@ def _runtime_policy_path(value: str | None) -> Path:
         return Path(value).expanduser().resolve()
     rules_dir = _rules_dir(None)
     return rules_dir / "runtime" / "clawguard-runtime.json"
+
+
+def _proxy_policy_path(value: str | None) -> Path:
+    if value:
+        return Path(value).expanduser().resolve()
+    rules_dir = _rules_dir(None)
+    return rules_dir / "proxy" / "mcp-proxy-policy.json"
 
 
 if __name__ == "__main__":
